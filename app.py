@@ -1,3 +1,4 @@
+# ¿Está bien inicializada y configurada mi aplicación de flask? 
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 
@@ -11,12 +12,8 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_BINDS'] = {
     'medidor2': "mysql://root:950221@localhost/medidor2"}
 
+# el método SQLAlchemy(app) llama implícitamente al método init_app()
 db = SQLAlchemy(app) #instancia de SQLAlchemy vinculada a tu aplicación Flask.
 
 from routes.mediciones import mediciones_blueprint
 app.register_blueprint(mediciones_blueprint)
-
-
-
-
-
