@@ -3,11 +3,13 @@ from flask import Blueprint, jsonify
 #from models.usuario import Usuario
 #from models.mediciones import corriente_fase_m1
 from clases.clases import lectura
+from datetime import datetime
 
-mediciones_blueprint = Blueprint('mediciones', __name__)
+dashboard_blueprint = Blueprint('dashboard', __name__)
+reporte_blueprint = Blueprint('dashboard', __name__)
 lecturas = lectura()
 
-@mediciones_blueprint.route('/dashboardm1', methods=['POST'])
+@dashboard_blueprint.route('/dashboardm1', methods=['POST'])
 def dashboard_m1():
     selector = True
     corrientes       = lecturas.corrientes(selector)
@@ -24,7 +26,7 @@ def dashboard_m1():
 
     return diccionario
 
-@mediciones_blueprint.route('/dashboardm2', methods=['POST'])
+@dashboard_blueprint.route('/dashboardm2', methods=['POST'])
 def dashboard_m2():
     selector = False
     corrientes       = lecturas.corrientes(selector)
@@ -40,12 +42,15 @@ def dashboard_m2():
     
     return diccionario
 
-@mediciones_blueprint.route('/reporte', methods=['POST'])
+@reporte_blueprint.route('/reporte', methods=['POST'])
 def reporte():
-
+    hora = datetime.now().time()
+    
     return
 
-@mediciones_blueprint.route('/info', methods=['POST'])
+@reporte_blueprint.route('/info', methods=['POST'])
 def info():
 
     return
+
+hora = datetime.now().time()

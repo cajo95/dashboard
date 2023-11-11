@@ -3,6 +3,11 @@ import datetime
 import time
 
 class lectura():
+    """ 
+    Por excepción de Potencia Activa, todos los demás metodos solo traén el ultimo registro agregado a DB
+    Potencia activa además de eso, genera promedio del día actual hasta el ultimo registro, medición más alta
+    y sumatoria de consumo.
+    """
     def potenciaActiva(self, selector ):
         try:
             acutal = datetime.datetime.now().strftime("%Y-%m-%d")
@@ -148,3 +153,9 @@ class lectura():
                      'fecha_hora'   : fecha_hora}
 
         return corriente
+    
+
+class reporte():
+    def reporte_de_usuario():
+
+        return
