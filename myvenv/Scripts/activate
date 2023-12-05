@@ -38,7 +38,7 @@ deactivate () {
 # unset irrelevant variables
 deactivate nondestructive
 
-VIRTUAL_ENV="C:\Users\Camilo\Desktop\esquema proyecto flask, flasksql alchemy\myvenv"
+VIRTUAL_ENV="C:\Users\Camilo\Documents\proyecto_dashboard\myvenv"
 export VIRTUAL_ENV
 
 _OLD_VIRTUAL_PATH="$PATH"

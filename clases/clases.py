@@ -1,6 +1,18 @@
 from models.mediciones import *
-import datetime
+from sqlalchemy import func, DateTime
+from datetime import datetime, timedelta
+from .listas import lista
+import pytz
+import uuid
 import time
+
+# lista_potencia_activa_por_hora = []
+# pot_act_L1m1 = pot_act_L2m1 = pot_act_L3m1 = pot_act_L1m2 = pot_act_L2m2 = pot_act_L3m2 = 0
+
+# global lista_potencia_activa_por_hora
+# global pot_act_L1m1; global pot_act_L2m1; global pot_act_L3m1 
+# global pot_act_L1m2; global pot_act_L2m2; global pot_act_L3m2
+
 
 class lectura():
     """ 
@@ -10,7 +22,7 @@ class lectura():
     """
     def potenciaActiva(self, selector ):
         try:
-            acutal = datetime.datetime.now().strftime("%Y-%m-%d")
+            acutal = datetime.now().strftime("%Y-%m-%d")
             listaPotenciaActivaL1 = []
             listaPotenciaActivaL2 = []
             listaPotenciaActivaL3 = []
@@ -131,7 +143,6 @@ class lectura():
         return voltajeEntreLineas
 
     def corrientes(self, selector):
-
         if selector == True:
             corrientesFase = corriente_fase_m1.query.order_by(corriente_fase_m1.fecha_hora.desc()).first()
         elif selector == False:
@@ -154,8 +165,239 @@ class lectura():
 
         return corriente
     
-
 class reporte():
-    def reporte_de_usuario():
+
+    def insert_en_db(self):
+        zona_horaria_gmt_5 = pytz.timezone('America/New_York')  
+        hora_actual_timeObj = datetime.now(zona_horaria_gmt_5)
+        hora_futura_datetimeObj = hora_actual_timeObj + timedelta(hours=1)
+        hora_futura_timeObj = hora_futura_datetimeObj.time()
+        hora_actual = hora_actual_timeObj.time()
+        hora_futura = hora_futura_timeObj
+        modelos = lista().modelos()
+        promedios = lista()
+        lista_promedio_L1 = []
+        lista_promedio_L2 = []
+        lista_promedio_L3 = []
+
+        # registros_en_rango = potencia_activa_m1.query.filter(
+        # potencia_activa_m1.fecha_hora >= datetime.combine(datetime.today(), hora_actual_timeObj.time()),
+        # potencia_activa_m1.fecha_hora <= datetime.combine(datetime.today(), hora_futura_timeObj)
+        # ).all()
+
+        #if hora_actual_timeObj.minute == 30: 
+        for modelo in modelos:
+            
+            registros_en_rango = modelo.query.filter(
+                func.extract('hour', modelo.fecha_hora) >= hora_actual.hour,
+                func.extract('hour', modelo.fecha_hora) < hora_futura.hour
+            ).order_by(modelo.fecha_hora.asc()).all()
+
+            lista_promedio_L1 = []; lista_promedio_L2 = []; lista_promedio_L3 = []
+
+            if modelo == potencia_activa_m1:
+                
+                for iteracion in registros_en_rango:
+                    lista_promedio_L1.append(iteracion.pot_ac_L1)
+                    lista_promedio_L2.append(iteracion.pot_ac_L2)
+                    lista_promedio_L3.append(iteracion.pot_ac_L3)
+                
+                pro_potactm1 = promedios.promedios(lista_promedio_L1, lista_promedio_L2, lista_promedio_L3)
+                # print(lista_promedio_L1)
+                # print(lista_promedio_L2)
+                # print(lista_promedio_L3)
+                 
+            elif modelo == potencia_activa_m2:
+
+                for iteracion in registros_en_rango:
+                    lista_promedio_L1.append(iteracion.pot_ac_L1)
+                    lista_promedio_L2.append(iteracion.pot_ac_L2)
+                    lista_promedio_L3.append(iteracion.pot_ac_L3)
+
+                pro_potactm2 = promedios.promedios(lista_promedio_L1, lista_promedio_L2, lista_promedio_L3)           
+
+            elif modelo == potencia_reactiva_m1:
+
+                for iteracion in registros_en_rango:
+                    lista_promedio_L1.append(iteracion.pot_rea_L1)
+                    lista_promedio_L2.append(iteracion.pot_rea_L2)
+                    lista_promedio_L3.append(iteracion.pot_rea_L3)
+
+                pro_potreactm1 = promedios.promedios(lista_promedio_L1, lista_promedio_L2, lista_promedio_L3)
+
+            elif modelo == potencia_reactiva_m2:
+
+                for iteracion in registros_en_rango:
+                    lista_promedio_L1.append(iteracion.pot_rea_L1)
+                    lista_promedio_L2.append(iteracion.pot_rea_L2)
+                    lista_promedio_L3.append(iteracion.pot_rea_L3)
+
+                pro_potreactm2 = promedios.promedios(lista_promedio_L1, lista_promedio_L2, lista_promedio_L3)
+                
+            elif modelo == factor_potencia_m1:
+
+                for iteracion in registros_en_rango:
+                    lista_promedio_L1.append(iteracion.fac_pot_L1)
+                    lista_promedio_L2.append(iteracion.fac_pot_L2)
+                    lista_promedio_L3.append(iteracion.fac_pot_L3)
+
+                pro_factpotm1 = promedios.promedios(lista_promedio_L1, lista_promedio_L2, lista_promedio_L3)
+
+            elif modelo == factor_potencia_m2:
+
+                for iteracion in registros_en_rango:
+                    lista_promedio_L1.append(iteracion.fac_pot_L1)
+                    lista_promedio_L2.append(iteracion.fac_pot_L2)
+                    lista_promedio_L3.append(iteracion.fac_pot_L3)
+
+                pro_factpotm2 = promedios.promedios(lista_promedio_L1, lista_promedio_L2, lista_promedio_L3)
+
+            elif modelo == corriente_fase_m1:
+
+                for iteracion in registros_en_rango:
+                    lista_promedio_L1.append(iteracion.corriente_L1)
+                    lista_promedio_L2.append(iteracion.corriente_L2)
+                    lista_promedio_L3.append(iteracion.corriente_L3)
+
+                pro_corrientem1 = promedios.promedios(lista_promedio_L1, lista_promedio_L2, lista_promedio_L3)
+
+            elif modelo == corriente_fase_m2:
+
+                for iteracion in registros_en_rango:
+                    lista_promedio_L1.append(iteracion.corriente_L1)
+                    lista_promedio_L2.append(iteracion.corriente_L2)
+                    lista_promedio_L3.append(iteracion.corriente_L3)
+
+                pro_corrientem2 = promedios.promedios(lista_promedio_L1, lista_promedio_L2, lista_promedio_L3)
+
+            elif modelo == tension_x_lineas_m1:
+
+                for iteracion in registros_en_rango:
+                    lista_promedio_L1.append(iteracion.tension_L1_L2)
+                    lista_promedio_L2.append(iteracion.tension_L2_L3)
+                    lista_promedio_L3.append(iteracion.tension_L3_L1)
+
+                pro_tensionm1 = promedios.promedios(lista_promedio_L1, lista_promedio_L2, lista_promedio_L3)
+
+            elif modelo == tension_x_lineas_m2:
+
+                for iteracion in registros_en_rango:
+                    lista_promedio_L1.append(iteracion.tension_L1_L2)
+                    lista_promedio_L2.append(iteracion.tension_L2_L3)
+                    lista_promedio_L3.append(iteracion.tension_L3_L1)
+
+                pro_tensionm2 = promedios.promedios(lista_promedio_L1, lista_promedio_L2, lista_promedio_L3)
+        
+        fechahora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        insert_pot_act = promedios_por_horas(id_promedio = str(uuid.uuid4()), fecha_hora = fechahora,
+                                            pot_act_L1_m1 = pro_potactm1[0], pot_act_L2_m1 = pro_potactm1[1], pot_act_L3_m1 = pro_potactm1[2],
+                                            pot_act_L1_m2 = pro_potactm2[0], pot_act_L2_m2 = pro_potactm2[1], pot_act_L3_m2 = pro_potactm2[2],
+                                            pot_react_L1_m1 = pro_potreactm1[0], pot_react_L2_m1 = pro_potreactm1[1], pot_react_L3_m1 = pro_potreactm1[2],
+                                            pot_react_L1_m2 = pro_potreactm2[0], pot_react_L2_m2 = pro_potreactm2[1], pot_react_L3_m2 = pro_potreactm2[2],
+                                            fac_pot_L1_m1 = pro_factpotm1[0], fac_pot_L2_m1 = pro_factpotm1[1], fac_pot_L3_m1 = pro_factpotm1[2],
+                                            fac_pot_L1_m2 = pro_factpotm2[0], fac_pot_L2_m2 = pro_factpotm2[1], fac_pot_L3_m2 = pro_factpotm2[2],
+                                            corriente_L1_m1 = pro_corrientem1[0], corriente_L2_m1 = pro_corrientem1[1], corriente_L3_m1 = pro_corrientem1[2],
+                                            corriente_L1_m2 = pro_corrientem2[0], corriente_L2_m2 = pro_corrientem2[1], corriente_L3_m2 = pro_corrientem2[2],
+                                            tension_L1L2_m1 = pro_tensionm1[0], tension_L2L3_m1 = pro_tensionm1[1], tension_L3L1_m1 = pro_tensionm1[2],
+                                            tension_L1L2_m2 = pro_tensionm2[0], tension_L2L3_m2 = pro_tensionm2[1], tension_L3L1_m2 = pro_tensionm2[2],
+                                            )
+        #print('2chichichi')
+        db.session.add(insert_pot_act)
+        db.session.commit()
+
+    # Este metodo solo sirve para la grafica del día actual.
+    def grafica_reporte_basico(self): 
+        lista_potencia_activa_por_hora = []
+        fecha_hora_actual = datetime.now()
+        fecha_hora_anterior = fecha_hora_actual - timedelta(hours=1) # Calcula la fecha y hora anterior
+        promedios_por_horas.fecha_hora = func.cast(promedios_por_horas.fecha_hora, DateTime) # Convierte la columna 'fecha_hora' a tipo datetime
+
+        Select_potencia_Activa_m1 = promedios_por_horas.query.filter(
+            promedios_por_horas.fecha_hora.between(fecha_hora_anterior, fecha_hora_actual)
+        ).order_by(promedios_por_horas.fecha_hora.desc()).all()
+
+        # esta parte es para la grafica. Es necesario ver como se guardan estos valores en el front.
+        for iterador in Select_potencia_Activa_m1:
+            lista_potencia_activa_por_hora.append(iterador.pot_act_L1_m1)
+            lista_potencia_activa_por_hora.append(iterador.pot_act_L2_m1)
+            lista_potencia_activa_por_hora.append(iterador.pot_act_L3_m1)
+            lista_potencia_activa_por_hora.append(iterador.pot_act_L1_m2)
+            lista_potencia_activa_por_hora.append(iterador.pot_act_L2_m2)
+            lista_potencia_activa_por_hora.append(iterador.pot_act_L3_m2)
+            lista_potencia_activa_por_hora.append(iterador.fecha_hora)
+
+        return lista_potencia_activa_por_hora
+    
+    # una vez con la información, se saca el consumo mas alto, el mas bajo y sumatoria por linea.
+    # ademas tambien consumo promedio de las tres lineas: sumar el consumo total de las 3 lineas y promediar
+    # y por ultimo consumo total de las tres lineas: suma de consumo total de las 3 lineas.
+    # mas alto, mas bajo, sumatoria, promedio:
+
+    def operaciones(self, lista):
+        lista_operaciones = []
+        maximo = max(lista)
+        minimo = min(lista)
+        suma = 0
+
+        for iterador in lista:
+            suma += iterador
+            #promedio += iterador/len(lista)
+
+        lista_operaciones.append(maximo, minimo, suma) #promedio
+        return lista_operaciones
+    
+    def operaciones_reporte_basico(self):
+
+        # Se debe hacer una consulta que filtre los registros seleccionados en donde solo se traigan los de la fecha actual.
+        operaciones_enlistadas = 0
+        reportes = reporte()
+        fecha_actual = datetime.now().date()
+        fecha_inicio_dia_actual = datetime.combine(fecha_actual, datetime.min.time())
+        fecha_fin_dia_actual = datetime.combine(fecha_actual, datetime.max.time())
+        lista_pot_act_L1m1 = []; lista_pot_act_L2m1 = []; lista_pot_act_L3m1 = []
+        lista_pot_act_L1m2 = []; lista_pot_act_L2m2 = []; lista_pot_act_L3m2 = []
+
+        lista_reporte = potencia_activa_m1.query.filter(
+            potencia_activa_m1.fecha_hora.between(fecha_inicio_dia_actual, fecha_fin_dia_actual)
+        ).order_by(potencia_activa_m1.fecha_hora.desc()).all()
+
+        for iterador in lista_reporte:
+            lista_pot_act_L1m1.append(iterador.pot_act_L1_m1)
+            lista_pot_act_L2m1.append(iterador.pot_act_L2_m1)
+            lista_pot_act_L3m1.append(iterador.pot_act_L3_m1)
+            lista_pot_act_L1m2.append(iterador.pot_act_L1_m2)
+            lista_pot_act_L2m2.append(iterador.pot_act_L2_m2)
+            lista_pot_act_L3m2.append(iterador.pot_act_L3_m2)
+
+        lista_pot_act_L1m1 = reportes.operaciones(lista_pot_act_L1m1)
+        lista_pot_act_L2m1 = reportes.operaciones(lista_pot_act_L1m1)
+        lista_pot_act_L3m1 = reportes.operaciones(lista_pot_act_L1m1)
+        lista_pot_act_L1m2 = reportes.operaciones(lista_pot_act_L1m1)
+        lista_pot_act_L2m2 = reportes.operaciones(lista_pot_act_L1m1)
+        lista_pot_act_L3m2 = reportes.operaciones(lista_pot_act_L1m1)
+
+        for i1, i2, i3, i4, i5, i6 in zip(lista_pot_act_L1m1, lista_pot_act_L1m1, lista_pot_act_L1m1, 
+                                          lista_pot_act_L1m1, lista_pot_act_L1m1, lista_pot_act_L1m1):
+            
+            consumo_total_lineas_m1 = i1 + i2 + i3 #+ i4 + i5 + i6
+            consumo_prome_lineas_m1 = consumo_total_lineas_m1 / 3
+            consumo_total_lineas_m2 = i4 + i5 + i6
+            consumo_prome_lineas_m2 = consumo_total_lineas_m2 / 3
+
+        operaciones_enlistadas = {'operacionesL1m1': lista_pot_act_L1m1, 
+                                'operacionesL2m1' : lista_pot_act_L2m1,
+                                'operacionesL3m1' : lista_pot_act_L3m1,
+                                'operacionesL1m2' : lista_pot_act_L1m2,
+                                'operacionesL2m2' : lista_pot_act_L2m2,
+                                'operacionesL3m2' : lista_pot_act_L3m2,
+                                'consumo_total_lineas_m1' : consumo_total_lineas_m1,
+                                'consumo_total_lineas_m2' : consumo_total_lineas_m2,
+                                'consumo_prome_lineas_m1' : consumo_prome_lineas_m1,
+                                'consumo_prome_lineas_m1' : consumo_prome_lineas_m2,}
+        
+        return operaciones_enlistadas
+
+    def reporte_avanzado(self):
 
         return
+    

@@ -1,4 +1,3 @@
-# ¿Está bien inicializada y configurada mi aplicación de flask? 
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 
