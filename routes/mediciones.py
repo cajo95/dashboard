@@ -44,29 +44,36 @@ def dashboard_m2():
 
 # ESTA CONSULTA DEBE SER HECHA CADA INICIO DE HORA 06:00, 07:00... ETC.
 # A DIFERENCIA DE LA INSERSIÓN DE LOS PROMEDIOS QUE SE PROGRAMA PARA CADA FINAL DE HORA: 06:59:59 COMO TAREA PROGRAMADA
-@reporte_blueprint.route('/reporte', methods=['POST'])
-def reporte_sencillo():
+@reporte_blueprint.route('/reporteact', methods=['POST'])
+def reporte_sencillo_dia_actual():
     lista2grafica = reporte().grafica_reporte_basico()
     lista2operaciones = reporte().operaciones_reporte_basico()
-    try:
-        fecha_seleccionada = request.args.get('fecha')
 
-        if str(fecha_seleccionada) == str(datetime.now().date()): # validar que se puedan comparar eficientemente.
-            return jsonify({'lista_grafica': lista2grafica},
-                           {'lista_operaciones': lista2operaciones})
+    return jsonify({'lista_grafica': lista2grafica},
+                    {'lista_operaciones': lista2operaciones})
 
-        else:
-            # Aqui va la logica de cuando la consulta es en cualquier día actual anterior al actual.
-            pass
 
-        return
+# @reporte_blueprint.route('/reporteactx', methods=['POST'])
+# def reporte_sencillo_dia_actual():
+#     # lista2grafica = reporte().grafica_reporte_basico()
+#     # lista2operaciones = reporte().operaciones_reporte_basico()
 
-    except:
-        return
+#     # return jsonify({'lista_grafica': lista2grafica},
+#     #                 {'lista_operaciones': lista2operaciones})
 
+#     try:
+#         fecha_seleccionada = request.args.get('fecha')
+
+#         if str(fecha_seleccionada) == str(datetime.now().date()): # validar que se puedan comparar eficientemente.
+#             pass
+
+#         else:
+#             # Aqui va la logica de cuando la consulta es en cualquier día actual anterior al actual.
+#             return
+
+#     except:
+#         return
+    
 # @reporte_blueprint.route('/reportebasico', methods=['POST'])
 # def reporte_sencillo():
-
-    
-
 #     return jsonify({'Potencia': lista2grafica})

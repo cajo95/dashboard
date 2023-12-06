@@ -301,7 +301,7 @@ class reporte():
                                             tension_L1L2_m1 = pro_tensionm1[0], tension_L2L3_m1 = pro_tensionm1[1], tension_L3L1_m1 = pro_tensionm1[2],
                                             tension_L1L2_m2 = pro_tensionm2[0], tension_L2L3_m2 = pro_tensionm2[1], tension_L3L1_m2 = pro_tensionm2[2],
                                             )
-        #print('2chichichi')
+        print('chichichi')
         db.session.add(insert_pot_act)
         db.session.commit()
 
@@ -343,7 +343,9 @@ class reporte():
             suma += iterador
             #promedio += iterador/len(lista)
 
-        lista_operaciones.append(maximo, minimo, suma) #promedio
+        lista_operaciones.append(maximo) #promedio , minimo, suma
+        lista_operaciones.append(minimo) #promedio , minimo, suma
+        lista_operaciones.append(suma) #promedio , minimo, suma
         return lista_operaciones
     
     def operaciones_reporte_basico(self):
@@ -357,9 +359,9 @@ class reporte():
         lista_pot_act_L1m1 = []; lista_pot_act_L2m1 = []; lista_pot_act_L3m1 = []
         lista_pot_act_L1m2 = []; lista_pot_act_L2m2 = []; lista_pot_act_L3m2 = []
 
-        lista_reporte = potencia_activa_m1.query.filter(
-            potencia_activa_m1.fecha_hora.between(fecha_inicio_dia_actual, fecha_fin_dia_actual)
-        ).order_by(potencia_activa_m1.fecha_hora.desc()).all()
+        lista_reporte = promedios_por_horas.query.filter(
+            promedios_por_horas.fecha_hora.between(fecha_inicio_dia_actual, fecha_fin_dia_actual)
+        ).order_by(promedios_por_horas.fecha_hora.desc()).all()
 
         for iterador in lista_reporte:
             lista_pot_act_L1m1.append(iterador.pot_act_L1_m1)
@@ -379,7 +381,7 @@ class reporte():
         for i1, i2, i3, i4, i5, i6 in zip(lista_pot_act_L1m1, lista_pot_act_L1m1, lista_pot_act_L1m1, 
                                           lista_pot_act_L1m1, lista_pot_act_L1m1, lista_pot_act_L1m1):
             
-            consumo_total_lineas_m1 = i1 + i2 + i3 #+ i4 + i5 + i6
+            consumo_total_lineas_m1 = i1 + i2 + i3
             consumo_prome_lineas_m1 = consumo_total_lineas_m1 / 3
             consumo_total_lineas_m2 = i4 + i5 + i6
             consumo_prome_lineas_m2 = consumo_total_lineas_m2 / 3

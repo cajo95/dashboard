@@ -4,7 +4,7 @@ from app import app
 from flask_apscheduler import APScheduler
 
 scheduler = APScheduler()
-@scheduler.task('cron', id='my_job', hour='*', minute= 59, second=59)
+@scheduler.task('cron', id='my_job', hour='*', minute= 58, second=59)
 def tarea_programada():
     #print('prueba')
     with app.app_context():
