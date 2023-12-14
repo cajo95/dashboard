@@ -1,18 +1,41 @@
 from models.mediciones import *
 from sqlalchemy import func, DateTime
 from datetime import datetime, timedelta
-from .listas import lista
+#from .listas import lista
 import pytz
 import uuid
 import time
 
-# lista_potencia_activa_por_hora = []
-# pot_act_L1m1 = pot_act_L2m1 = pot_act_L3m1 = pot_act_L1m2 = pot_act_L2m2 = pot_act_L3m2 = 0
+class lista():
 
-# global lista_potencia_activa_por_hora
-# global pot_act_L1m1; global pot_act_L2m1; global pot_act_L3m1 
-# global pot_act_L1m2; global pot_act_L2m2; global pot_act_L3m2
+    def modelos(self):
 
+        lista_modelos = [potencia_activa_m1, potencia_activa_m2, potencia_reactiva_m1, potencia_reactiva_m2,
+                        factor_potencia_m1, factor_potencia_m2, corriente_fase_m1, corriente_fase_m2,
+                        tension_x_lineas_m1, tension_x_lineas_m2]
+        
+        return lista_modelos
+
+    def promedios(self, lista_1, lista_2, lista_3):
+
+        promedio_lista_1 = promedio_lista_2 = promedio_lista_3 = 0
+        lista_promedios = []
+
+        for valor1, valor2, valor3 in zip(lista_1, lista_2, lista_3):
+            promedio_lista_1 += valor1/len(lista_1)
+            promedio_lista_2 += valor2/len(lista_2)
+            promedio_lista_3 += valor3/len(lista_3)
+
+        #round(totalPotenciaActivaL1, 2)
+        promedio_L1 = round(promedio_lista_1, 2)
+        promedio_L2 = round(promedio_lista_2, 2)
+        promedio_L3 = round(promedio_lista_3, 2)
+        
+        lista_promedios.append(promedio_L1)
+        lista_promedios.append(promedio_L2)
+        lista_promedios.append(promedio_L3)
+
+        return lista_promedios
 
 class lectura():
     """ 
@@ -34,9 +57,8 @@ class lectura():
 
             elif selector == False:
                 potenciaActiva = potencia_activa_m2.query.order_by(potencia_activa_m2.fecha_hora.desc()).first()
-                potenciaActivaPromedio = db.session.query(potencia_activa_m2).all() #2
-                
-                #1 y 2 deben ser lista pero no all si no limitadas al día actual.
+                potenciaActivaPromedio = potencia_activa_m2.query.order_by(potencia_activa_m2.fecha_hora.desc())
+                #potenciaActivaPromedio = db.session.query(potencia_activa_m2).all() #2
             
             promedioPotenciaActivaL1 = promedioPotenciaActivaL2 = promedioPotenciaActivaL3 = 0
             totalPotenciaActivaL1 = totalPotenciaActivaL2 = totalPotenciaActivaL3 = 0
@@ -147,9 +169,6 @@ class lectura():
             corrientesFase = corriente_fase_m1.query.order_by(corriente_fase_m1.fecha_hora.desc()).first()
         elif selector == False:
             corrientesFase = corriente_fase_m2.query.order_by(corriente_fase_m2.fecha_hora.desc()).first()
-
-        # Obtén la primera instancia de corriente_fase_m1 en la lista de usuarios
-        #corrientesFase = corrientesFase[0]
 
         # Accede a los valores de los campos de la tabla
         #id_cor = primer_usuario.id_cor
@@ -301,22 +320,32 @@ class reporte():
                                             tension_L1L2_m1 = pro_tensionm1[0], tension_L2L3_m1 = pro_tensionm1[1], tension_L3L1_m1 = pro_tensionm1[2],
                                             tension_L1L2_m2 = pro_tensionm2[0], tension_L2L3_m2 = pro_tensionm2[1], tension_L3L1_m2 = pro_tensionm2[2],
                                             )
-        print('chichichi')
+        #print('chichichi')
         db.session.add(insert_pot_act)
         db.session.commit()
 
-    # Este metodo solo sirve para la grafica del día actual.
-    def grafica_reporte_basico(self): 
+    
+    def grafica_reporte_basico(self, selector, fecha_recibida): 
         lista_potencia_activa_por_hora = []
+        fecha_recibida = datetime.strptime(fecha_recibida, '%Y-%m-%d')
         fecha_hora_actual = datetime.now()
         fecha_hora_anterior = fecha_hora_actual - timedelta(hours=1) # Calcula la fecha y hora anterior
         promedios_por_horas.fecha_hora = func.cast(promedios_por_horas.fecha_hora, DateTime) # Convierte la columna 'fecha_hora' a tipo datetime
 
-        Select_potencia_Activa_m1 = promedios_por_horas.query.filter(
-            promedios_por_horas.fecha_hora.between(fecha_hora_anterior, fecha_hora_actual)
-        ).order_by(promedios_por_horas.fecha_hora.desc()).all()
+        if selector == True:
+            # Trae el registro generado cada hora, el registro se guardará cada minuto 59:59 de cada hora
+            # en la tabla 'promedios_por_horas' esta función se ejecutará a las 00:00 de cada hora.
+            # La función también se ejecutará cada vez que se envíe una fecha de la que se llamará 
+            # TODOS los registros, eso lo hace la consultá en el else. 
+            Select_potencia_Activa_m1 = promedios_por_horas.query.filter(
+                promedios_por_horas.fecha_hora.between(fecha_hora_anterior, fecha_hora_actual)
+            ).order_by(promedios_por_horas.fecha_hora.desc()).all()
+        else:
+            # Trae todos los registros de promedios del dia 'fecha_recibida'
+            Select_potencia_Activa_m1 = promedios_por_horas.query.filter(
+                db.func.date(promedios_por_horas.fecha_hora) == fecha_recibida.date()
+            ).order_by(promedios_por_horas.fecha_hora.desc()).all()
 
-        # esta parte es para la grafica. Es necesario ver como se guardan estos valores en el front.
         for iterador in Select_potencia_Activa_m1:
             lista_potencia_activa_por_hora.append(iterador.pot_act_L1_m1)
             lista_potencia_activa_por_hora.append(iterador.pot_act_L2_m1)
@@ -328,40 +357,41 @@ class reporte():
 
         return lista_potencia_activa_por_hora
     
-    # una vez con la información, se saca el consumo mas alto, el mas bajo y sumatoria por linea.
+    # Una vez con la información, se saca el consumo más alto, el más bajo y sumatoria por linea.
     # ademas tambien consumo promedio de las tres lineas: sumar el consumo total de las 3 lineas y promediar
     # y por ultimo consumo total de las tres lineas: suma de consumo total de las 3 lineas.
-    # mas alto, mas bajo, sumatoria, promedio:
 
     def operaciones(self, lista):
         lista_operaciones = []
         maximo = max(lista)
         minimo = min(lista)
-        suma = 0
-
-        for iterador in lista:
-            suma += iterador
-            #promedio += iterador/len(lista)
-
-        lista_operaciones.append(maximo) #promedio , minimo, suma
-        lista_operaciones.append(minimo) #promedio , minimo, suma
-        lista_operaciones.append(suma) #promedio , minimo, suma
+        suma   = sum(lista)
+        lista_operaciones.append(maximo)
+        lista_operaciones.append(minimo)
+        lista_operaciones.append(suma)
         return lista_operaciones
     
-    def operaciones_reporte_basico(self):
-
-        # Se debe hacer una consulta que filtre los registros seleccionados en donde solo se traigan los de la fecha actual.
+    def operaciones_reporte_basico(self, selector, fecha_recibida):
+        
         operaciones_enlistadas = 0
         reportes = reporte()
         fecha_actual = datetime.now().date()
         fecha_inicio_dia_actual = datetime.combine(fecha_actual, datetime.min.time())
         fecha_fin_dia_actual = datetime.combine(fecha_actual, datetime.max.time())
+        fecha_recibida = datetime.strptime(fecha_recibida, '%Y-%m-%d')
         lista_pot_act_L1m1 = []; lista_pot_act_L2m1 = []; lista_pot_act_L3m1 = []
         lista_pot_act_L1m2 = []; lista_pot_act_L2m2 = []; lista_pot_act_L3m2 = []
-
-        lista_reporte = promedios_por_horas.query.filter(
-            promedios_por_horas.fecha_hora.between(fecha_inicio_dia_actual, fecha_fin_dia_actual)
-        ).order_by(promedios_por_horas.fecha_hora.desc()).all()
+        
+        if selector == True:
+             # La consulta filtra los registros y trae solo los de la fecha recibida desde el endpoint.
+            lista_reporte = promedios_por_horas.query.filter(
+                promedios_por_horas.fecha_hora.between(fecha_inicio_dia_actual, fecha_fin_dia_actual)
+            ).order_by(promedios_por_horas.fecha_hora.desc()).all()
+        else:
+            # La consulta filtra los registros y trae solo los de la fecha actual.
+            lista_reporte = promedios_por_horas.query.filter(
+                db.func.date(promedios_por_horas.fecha_hora) == fecha_recibida.date()
+            ).order_by(promedios_por_horas.fecha_hora.desc()).all()
 
         for iterador in lista_reporte:
             lista_pot_act_L1m1.append(iterador.pot_act_L1_m1)
@@ -371,32 +401,39 @@ class reporte():
             lista_pot_act_L2m2.append(iterador.pot_act_L2_m2)
             lista_pot_act_L3m2.append(iterador.pot_act_L3_m2)
 
-        lista_pot_act_L1m1 = reportes.operaciones(lista_pot_act_L1m1)
-        lista_pot_act_L2m1 = reportes.operaciones(lista_pot_act_L1m1)
-        lista_pot_act_L3m1 = reportes.operaciones(lista_pot_act_L1m1)
-        lista_pot_act_L1m2 = reportes.operaciones(lista_pot_act_L1m1)
-        lista_pot_act_L2m2 = reportes.operaciones(lista_pot_act_L1m1)
-        lista_pot_act_L3m2 = reportes.operaciones(lista_pot_act_L1m1)
+        pot_act_L1m1 = reportes.operaciones(lista_pot_act_L1m1)
+        pot_act_L2m1 = reportes.operaciones(lista_pot_act_L2m1)
+        pot_act_L3m1 = reportes.operaciones(lista_pot_act_L3m1)
+        pot_act_L1m2 = reportes.operaciones(lista_pot_act_L1m2)
+        pot_act_L2m2 = reportes.operaciones(lista_pot_act_L2m2)
+        pot_act_L3m2 = reportes.operaciones(lista_pot_act_L3m2)        
+        consumo_total_lineas_m1 = pot_act_L1m1[2] + pot_act_L2m1[2] + pot_act_L3m1[2]
+        consumo_prome_lineas_m1 = consumo_total_lineas_m1 / 3
+        consumo_total_lineas_m2 = pot_act_L1m2[2] + pot_act_L2m2[2] + pot_act_L3m2[2]
+        consumo_prome_lineas_m2 = consumo_total_lineas_m2 / 3
+        #TODO hacer redondeo de totales y promedios; hacer repaso de toda la logica.
 
-        for i1, i2, i3, i4, i5, i6 in zip(lista_pot_act_L1m1, lista_pot_act_L1m1, lista_pot_act_L1m1, 
-                                          lista_pot_act_L1m1, lista_pot_act_L1m1, lista_pot_act_L1m1):
-            
-            consumo_total_lineas_m1 = i1 + i2 + i3
-            consumo_prome_lineas_m1 = consumo_total_lineas_m1 / 3
-            consumo_total_lineas_m2 = i4 + i5 + i6
-            consumo_prome_lineas_m2 = consumo_total_lineas_m2 / 3
-
-        operaciones_enlistadas = {'operacionesL1m1': lista_pot_act_L1m1, 
-                                'operacionesL2m1' : lista_pot_act_L2m1,
-                                'operacionesL3m1' : lista_pot_act_L3m1,
-                                'operacionesL1m2' : lista_pot_act_L1m2,
-                                'operacionesL2m2' : lista_pot_act_L2m2,
-                                'operacionesL3m2' : lista_pot_act_L3m2,
+        operaciones_enlistadas = {'operacionesL1m1': pot_act_L1m1, 
+                                'operacionesL2m1' : pot_act_L2m1,
+                                'operacionesL3m1' : pot_act_L3m1,
+                                'operacionesL1m2' : pot_act_L1m2,
+                                'operacionesL2m2' : pot_act_L2m2,
+                                'operacionesL3m2' : pot_act_L3m2,
                                 'consumo_total_lineas_m1' : consumo_total_lineas_m1,
                                 'consumo_total_lineas_m2' : consumo_total_lineas_m2,
                                 'consumo_prome_lineas_m1' : consumo_prome_lineas_m1,
-                                'consumo_prome_lineas_m1' : consumo_prome_lineas_m2,}
+                                'consumo_prome_lineas_m2' : consumo_prome_lineas_m2,}
         
+        return operaciones_enlistadas
+        
+    def reporte_otro_dia(self, fecha_recibida):
+        reportes = reporte()
+        reporte_grafica = reportes.grafica_reporte_basico(False, fecha_recibida)
+        reporte_operaciones = reportes.operaciones_reporte_basico(False, fecha_recibida)
+
+        operaciones_enlistadas = {'reporte_grafica': reporte_grafica, 
+                                'reporte_operaciones' : reporte_operaciones}
+
         return operaciones_enlistadas
 
     def reporte_avanzado(self):

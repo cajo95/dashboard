@@ -1,4 +1,4 @@
-from models.mediciones import *
+"""from models.mediciones import *
 class lista():
 
     def modelos(self):
@@ -30,3 +30,4 @@ class lista():
 
         return lista_promedios
 
+"""

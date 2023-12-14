@@ -7,7 +7,9 @@ from datetime import datetime
 
 dashboard_blueprint = Blueprint('dashboard', __name__)
 reporte_blueprint = Blueprint('reporte', __name__)
+fecha_actual = datetime.now().date()
 lecturas = lectura()
+reportes = reporte()
 
 @dashboard_blueprint.route('/dashboardm1', methods=['POST'])
 def dashboard_m1():
@@ -44,36 +46,36 @@ def dashboard_m2():
 
 # ESTA CONSULTA DEBE SER HECHA CADA INICIO DE HORA 06:00, 07:00... ETC.
 # A DIFERENCIA DE LA INSERSIÓN DE LOS PROMEDIOS QUE SE PROGRAMA PARA CADA FINAL DE HORA: 06:59:59 COMO TAREA PROGRAMADA
-@reporte_blueprint.route('/reporteact', methods=['POST'])
+@reporte_blueprint.route('/report', methods=['POST'])
 def reporte_sencillo_dia_actual():
-    lista2grafica = reporte().grafica_reporte_basico()
-    lista2operaciones = reporte().operaciones_reporte_basico()
+    fecha_generica = "1999-12-31"
+    lista2grafica = reportes.grafica_reporte_basico(True, fecha_generica)
+    lista2operaciones = reportes.operaciones_reporte_basico(True, fecha_generica)
 
     return jsonify({'lista_grafica': lista2grafica},
                     {'lista_operaciones': lista2operaciones})
 
 
-# @reporte_blueprint.route('/reporteactx', methods=['POST'])
-# def reporte_sencillo_dia_actual():
-#     # lista2grafica = reporte().grafica_reporte_basico()
-#     # lista2operaciones = reporte().operaciones_reporte_basico()
+@reporte_blueprint.route('/reportother', methods=['POST'])
+def reporte_cualquier_dia():
+    # Este endpoint permite traer todos los registros de la tabla 'promedios_por_hora'
+    try:
+        global fecha_actual
+        data = request.get_json()
+        fecha_recibida = data['fecha']
 
-#     # return jsonify({'lista_grafica': lista2grafica},
-#     #                 {'lista_operaciones': lista2operaciones})
+        if str(fecha_recibida) == str(fecha_actual):
+            print(fecha_recibida)
+            lista2grafica = reportes.reporte_otro_dia(fecha_recibida)
 
-#     try:
-#         fecha_seleccionada = request.args.get('fecha')
+            return jsonify(lista2grafica)
+        
+        else:
+            return False
 
-#         if str(fecha_seleccionada) == str(datetime.now().date()): # validar que se puedan comparar eficientemente.
-#             pass
-
-#         else:
-#             # Aqui va la logica de cuando la consulta es en cualquier día actual anterior al actual.
-#             return
-
-#     except:
-#         return
+    except Exception as e:
+        return e
     
-# @reporte_blueprint.route('/reportebasico', methods=['POST'])
-# def reporte_sencillo():
-#     return jsonify({'Potencia': lista2grafica})
+@reporte_blueprint.route('/advance', methods=['POST'])
+def reporte_avanzado():
+    return jsonify({'report': 'advance'})
