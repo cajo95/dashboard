@@ -49,33 +49,41 @@ def dashboard_m2():
 @reporte_blueprint.route('/report', methods=['POST'])
 def reporte_sencillo_dia_actual():
     fecha_generica = "1999-12-31"
+    # Estas listas contienen los elementos para la grafica y el reporte sencillo de cada hora.
     lista2grafica = reportes.grafica_reporte_basico(True, fecha_generica)
     lista2operaciones = reportes.operaciones_reporte_basico(True, fecha_generica)
+    reporte_avanzado = reportes.reporte_avanzado(True, fecha_generica)
 
     return jsonify({'lista_grafica': lista2grafica},
-                    {'lista_operaciones': lista2operaciones})
-
+                    {'lista_operaciones': lista2operaciones},
+                    {'repore_avanzado': reporte_avanzado})
 
 @reporte_blueprint.route('/reportother', methods=['POST'])
 def reporte_cualquier_dia():
     # Este endpoint permite traer todos los registros de la tabla 'promedios_por_hora'
-    try:
-        global fecha_actual
-        data = request.get_json()
-        fecha_recibida = data['fecha']
 
-        if str(fecha_recibida) == str(fecha_actual):
-            print(fecha_recibida)
-            lista2grafica = reportes.reporte_otro_dia(fecha_recibida)
+    global fecha_actual
+    data = request.get_json()
+    fecha_recibida = data['fecha']
+    lista2grafica = reportes.reporte_otro_dia(fecha_recibida)
+    return jsonify(lista2grafica)
 
-            return jsonify(lista2grafica)
-        
-        else:
-            return False
+    #if str(fecha_recibida) == str(fecha_actual):
+        #print(fecha_recibida)
 
-    except Exception as e:
-        return e
     
-@reporte_blueprint.route('/advance', methods=['POST'])
-def reporte_avanzado():
-    return jsonify({'report': 'advance'})
+    # else:
+    #     return jsonify({'reportother': False})
+    
+"""Reporte avanzado debe ir dentro de reporte sencillo en el mismo JSON
+    Tanto el de fecha de dia actual como cualquier dia"""
+    
+# @reporte_blueprint.route('/advance', methods=['POST'])
+# def reporte_avanzado():
+#     global fecha_actual
+#     data = request.get_json()
+#     fecha_recibida = data['fecha']
+#     lista2grafica = reportes.reporte_otro_dia(fecha_recibida)
+#     return jsonify(lista2grafica)
+
+    #return jsonify({'report': 'advance'})

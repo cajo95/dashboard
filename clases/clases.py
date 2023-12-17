@@ -372,71 +372,129 @@ class reporte():
         return lista_operaciones
     
     def operaciones_reporte_basico(self, selector, fecha_recibida):
+        try: 
         
-        operaciones_enlistadas = 0
+            operaciones_enlistadas = 0
+            reportes = reporte()
+            fecha_actual = datetime.now().date()
+            fecha_inicio_dia_actual = datetime.combine(fecha_actual, datetime.min.time())
+            fecha_fin_dia_actual = datetime.combine(fecha_actual, datetime.max.time())
+            fecha_recibida = datetime.strptime(fecha_recibida, '%Y-%m-%d')
+            lista_pot_act_L1m1 = []; lista_pot_act_L2m1 = []; lista_pot_act_L3m1 = []
+            lista_pot_act_L1m2 = []; lista_pot_act_L2m2 = []; lista_pot_act_L3m2 = []
+            
+            if selector == True:
+                # La consulta filtra los registros y trae solo los de la fecha actual entre la hora x y la x+1
+                lista_reporte = promedios_por_horas.query.filter(
+                    promedios_por_horas.fecha_hora.between(fecha_inicio_dia_actual, fecha_fin_dia_actual)
+                ).order_by(promedios_por_horas.fecha_hora.desc()).all()
+            else:
+                # La consulta filtra los registros y trae solo los de la fecha recibida desde el endpoint.
+                lista_reporte = promedios_por_horas.query.filter(
+                    db.func.date(promedios_por_horas.fecha_hora) == fecha_recibida.date()
+                ).order_by(promedios_por_horas.fecha_hora.desc()).all()
+
+            for iterador in lista_reporte:
+                lista_pot_act_L1m1.append(iterador.pot_act_L1_m1)
+                lista_pot_act_L2m1.append(iterador.pot_act_L2_m1)
+                lista_pot_act_L3m1.append(iterador.pot_act_L3_m1)
+                lista_pot_act_L1m2.append(iterador.pot_act_L1_m2)
+                lista_pot_act_L2m2.append(iterador.pot_act_L2_m2)
+                lista_pot_act_L3m2.append(iterador.pot_act_L3_m2)
+
+            pot_act_L1m1 = reportes.operaciones(lista_pot_act_L1m1)
+            pot_act_L2m1 = reportes.operaciones(lista_pot_act_L2m1)
+            pot_act_L3m1 = reportes.operaciones(lista_pot_act_L3m1)
+            pot_act_L1m2 = reportes.operaciones(lista_pot_act_L1m2)
+            pot_act_L2m2 = reportes.operaciones(lista_pot_act_L2m2)
+            pot_act_L3m2 = reportes.operaciones(lista_pot_act_L3m2)        
+            consumo_total_lineas_m1 = pot_act_L1m1[2] + pot_act_L2m1[2] + pot_act_L3m1[2]
+            consumo_prome_lineas_m1 = consumo_total_lineas_m1 / 3
+            consumo_total_lineas_m2 = pot_act_L1m2[2] + pot_act_L2m2[2] + pot_act_L3m2[2]
+            consumo_prome_lineas_m2 = consumo_total_lineas_m2 / 3
+            #TODO hacer redondeo de totales y promedios; hacer repaso de toda la logica.
+
+            operaciones_enlistadas = {'operacionesL1m1': pot_act_L1m1, 
+                                    'operacionesL2m1' : pot_act_L2m1,
+                                    'operacionesL3m1' : pot_act_L3m1,
+                                    'operacionesL1m2' : pot_act_L1m2,
+                                    'operacionesL2m2' : pot_act_L2m2,
+                                    'operacionesL3m2' : pot_act_L3m2,
+                                    'consumo_total_lineas_m1' : consumo_total_lineas_m1,
+                                    'consumo_total_lineas_m2' : consumo_total_lineas_m2,
+                                    'consumo_prome_lineas_m1' : consumo_prome_lineas_m1,
+                                    'consumo_prome_lineas_m2' : consumo_prome_lineas_m2,}
+            
+            return operaciones_enlistadas
+        
+        except Exception as e:
+            return {'Error': False}
+        
+    def reporte_otro_dia(self, fecha_recibida):
         reportes = reporte()
+        reporte_grafica     = reportes.grafica_reporte_basico(False, fecha_recibida)
+        reporte_operaciones = reportes.operaciones_reporte_basico(False, fecha_recibida)
+        reporte_avanzado    = reportes.reporte_avanzado(False, fecha_recibida)
+
+        operaciones_enlistadas = {'reporte_grafica': reporte_grafica, 
+                                'reporte_sencillo' : reporte_operaciones,
+                                'reporte_avanzado' : reporte_avanzado}    
+
+        return operaciones_enlistadas
+
+    def reporte_avanzado(self, selector, fecha_recibida):
+        
         fecha_actual = datetime.now().date()
         fecha_inicio_dia_actual = datetime.combine(fecha_actual, datetime.min.time())
         fecha_fin_dia_actual = datetime.combine(fecha_actual, datetime.max.time())
         fecha_recibida = datetime.strptime(fecha_recibida, '%Y-%m-%d')
-        lista_pot_act_L1m1 = []; lista_pot_act_L2m1 = []; lista_pot_act_L3m1 = []
-        lista_pot_act_L1m2 = []; lista_pot_act_L2m2 = []; lista_pot_act_L3m2 = []
+        dicc = {'activa': {}, 'reactiva': {}, 'fac_pot': {}, 'tension': {}, 'corriente': {}}
         
         if selector == True:
-             # La consulta filtra los registros y trae solo los de la fecha recibida desde el endpoint.
+            # La consulta filtra los registros y trae solo los de la fecha actual entre la hora x y la x+1
             lista_reporte = promedios_por_horas.query.filter(
                 promedios_por_horas.fecha_hora.between(fecha_inicio_dia_actual, fecha_fin_dia_actual)
             ).order_by(promedios_por_horas.fecha_hora.desc()).all()
         else:
-            # La consulta filtra los registros y trae solo los de la fecha actual.
+            # La consulta filtra los registros y trae solo los de la fecha recibida desde el endpoint.
             lista_reporte = promedios_por_horas.query.filter(
                 db.func.date(promedios_por_horas.fecha_hora) == fecha_recibida.date()
             ).order_by(promedios_por_horas.fecha_hora.desc()).all()
 
         for iterador in lista_reporte:
-            lista_pot_act_L1m1.append(iterador.pot_act_L1_m1)
-            lista_pot_act_L2m1.append(iterador.pot_act_L2_m1)
-            lista_pot_act_L3m1.append(iterador.pot_act_L3_m1)
-            lista_pot_act_L1m2.append(iterador.pot_act_L1_m2)
-            lista_pot_act_L2m2.append(iterador.pot_act_L2_m2)
-            lista_pot_act_L3m2.append(iterador.pot_act_L3_m2)
+            dicc['activa']['pot_act_L1_m1'] = dicc['activa'].get('pot_act_L1_m1', []) + [iterador.pot_act_L1_m1]
+            dicc['activa']['pot_act_L2_m1'] = dicc['activa'].get('pot_act_L2_m1', []) + [iterador.pot_act_L2_m1]
+            dicc['activa']['pot_act_L3_m1'] = dicc['activa'].get('pot_act_L3_m1', []) + [iterador.pot_act_L3_m1]
+            dicc['activa']['pot_act_L1_m2'] = dicc['activa'].get('pot_act_L1_m2', []) + [iterador.pot_act_L1_m2]
+            dicc['activa']['pot_act_L2_m2'] = dicc['activa'].get('pot_act_L2_m2', []) + [iterador.pot_act_L2_m2]
+            dicc['activa']['pot_act_L3_m2'] = dicc['activa'].get('pot_act_L3_m2', []) + [iterador.pot_act_L3_m2]
 
-        pot_act_L1m1 = reportes.operaciones(lista_pot_act_L1m1)
-        pot_act_L2m1 = reportes.operaciones(lista_pot_act_L2m1)
-        pot_act_L3m1 = reportes.operaciones(lista_pot_act_L3m1)
-        pot_act_L1m2 = reportes.operaciones(lista_pot_act_L1m2)
-        pot_act_L2m2 = reportes.operaciones(lista_pot_act_L2m2)
-        pot_act_L3m2 = reportes.operaciones(lista_pot_act_L3m2)        
-        consumo_total_lineas_m1 = pot_act_L1m1[2] + pot_act_L2m1[2] + pot_act_L3m1[2]
-        consumo_prome_lineas_m1 = consumo_total_lineas_m1 / 3
-        consumo_total_lineas_m2 = pot_act_L1m2[2] + pot_act_L2m2[2] + pot_act_L3m2[2]
-        consumo_prome_lineas_m2 = consumo_total_lineas_m2 / 3
-        #TODO hacer redondeo de totales y promedios; hacer repaso de toda la logica.
+            dicc['reactiva']['pot_react_L1_m1'] = dicc['reactiva'].get('pot_react_L1_m1', []) + [iterador.pot_react_L1_m1]
+            dicc['reactiva']['pot_react_L2_m1'] = dicc['reactiva'].get('pot_react_L2_m1', []) + [iterador.pot_react_L2_m1]
+            dicc['reactiva']['pot_react_L3_m1'] = dicc['reactiva'].get('pot_react_L3_m1', []) + [iterador.pot_react_L3_m1]
+            dicc['reactiva']['pot_react_L1_m2'] = dicc['reactiva'].get('pot_react_L1_m2', []) + [iterador.pot_react_L1_m2]
+            dicc['reactiva']['pot_react_L2_m2'] = dicc['reactiva'].get('pot_react_L2_m2', []) + [iterador.pot_react_L2_m2]
+            dicc['reactiva']['pot_react_L3_m2'] = dicc['reactiva'].get('pot_react_L3_m2', []) + [iterador.pot_react_L3_m2]
 
-        operaciones_enlistadas = {'operacionesL1m1': pot_act_L1m1, 
-                                'operacionesL2m1' : pot_act_L2m1,
-                                'operacionesL3m1' : pot_act_L3m1,
-                                'operacionesL1m2' : pot_act_L1m2,
-                                'operacionesL2m2' : pot_act_L2m2,
-                                'operacionesL3m2' : pot_act_L3m2,
-                                'consumo_total_lineas_m1' : consumo_total_lineas_m1,
-                                'consumo_total_lineas_m2' : consumo_total_lineas_m2,
-                                'consumo_prome_lineas_m1' : consumo_prome_lineas_m1,
-                                'consumo_prome_lineas_m2' : consumo_prome_lineas_m2,}
-        
-        return operaciones_enlistadas
-        
-    def reporte_otro_dia(self, fecha_recibida):
-        reportes = reporte()
-        reporte_grafica = reportes.grafica_reporte_basico(False, fecha_recibida)
-        reporte_operaciones = reportes.operaciones_reporte_basico(False, fecha_recibida)
+            dicc['fac_pot']['fac_pot_L1_m1'] = dicc['fac_pot'].get('fac_pot_L1_m1', []) + [iterador.fac_pot_L1_m1]
+            dicc['fac_pot']['fac_pot_L2_m1'] = dicc['fac_pot'].get('fac_pot_L2_m1', []) + [iterador.fac_pot_L2_m1]
+            dicc['fac_pot']['fac_pot_L3_m1'] = dicc['fac_pot'].get('fac_pot_L3_m1', []) + [iterador.fac_pot_L3_m1]
+            dicc['fac_pot']['fac_pot_L1_m2'] = dicc['fac_pot'].get('fac_pot_L1_m2', []) + [iterador.fac_pot_L1_m2]
+            dicc['fac_pot']['fac_pot_L2_m2'] = dicc['fac_pot'].get('fac_pot_L2_m2', []) + [iterador.fac_pot_L2_m2]
+            dicc['fac_pot']['fac_pot_L3_m2'] = dicc['fac_pot'].get('fac_pot_L3_m2', []) + [iterador.fac_pot_L3_m2]
 
-        operaciones_enlistadas = {'reporte_grafica': reporte_grafica, 
-                                'reporte_operaciones' : reporte_operaciones}
+            dicc['tension']['tension_L1L2_m1'] = dicc['tension'].get('tension_L1L2_m1', []) + [iterador.tension_L1L2_m1]
+            dicc['tension']['tension_L2L3_m1'] = dicc['tension'].get('tension_L2L3_m1', []) + [iterador.tension_L2L3_m1]
+            dicc['tension']['tension_L3L1_m1'] = dicc['tension'].get('tension_L3L1_m1', []) + [iterador.tension_L3L1_m1]
+            dicc['tension']['tension_L1L2_m2'] = dicc['tension'].get('tension_L1L2_m2', []) + [iterador.tension_L1L2_m2]
+            dicc['tension']['tension_L2L3_m2'] = dicc['tension'].get('tension_L2L3_m2', []) + [iterador.tension_L2L3_m2]
+            dicc['tension']['tension_L3L1_m2'] = dicc['tension'].get('tension_L3L1_m2', []) + [iterador.tension_L3L1_m2]
 
-        return operaciones_enlistadas
-
-    def reporte_avanzado(self):
-
-        return
-    
+            dicc['corriente']['corriente_L1_m1'] = dicc['corriente'].get('corriente_L1_m1', []) + [iterador.corriente_L1_m1]
+            dicc['corriente']['corriente_L2_m1'] = dicc['corriente'].get('corriente_L2_m1', []) + [iterador.corriente_L2_m1]
+            dicc['corriente']['corriente_L3_m1'] = dicc['corriente'].get('corriente_L3_m1', []) + [iterador.corriente_L3_m1]
+            dicc['corriente']['corriente_L1_m2'] = dicc['corriente'].get('corriente_L1_m2', []) + [iterador.corriente_L1_m2]
+            dicc['corriente']['corriente_L2_m2'] = dicc['corriente'].get('corriente_L2_m2', []) + [iterador.corriente_L2_m2]
+            dicc['corriente']['corriente_L3_m2'] = dicc['corriente'].get('corriente_L3_m2', []) + [iterador.corriente_L3_m2]
+            
+        return dicc
